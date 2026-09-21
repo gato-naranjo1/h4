@@ -1,0 +1,462 @@
+#!/usr/bin/env bash
+# ==============================================================================
+#  Danael H4x · Modern VPS Proxy & VPN Suite Installer
+#  Compatible con: Ubuntu, Debian, Arch, Kali, AlmaLinux, Rocky, CentOS, Fedora
+# ==============================================================================
+
+set -e
+
+# Configuración del repositorio para descarga de binarios
+GITHUB_REPO="${GITHUB_REPO:-gato-naranjo1/h4}"
+GITHUB_BRANCH="${GITHUB_BRANCH:-main}"
+
+# Asegurar permisos de superusuario
+if [ "$(id -u)" -ne 0 ]; then
+    echo -e "\033[38;5;203m[ERROR] Este script debe ejecutarse con privilegios de root (sudo).\033[0m"
+    exit 1
+fi
+
+# Colores ANSI estilo Claude / Bubbletea
+RESET="\033[0m"
+BOLD="\033[1m"
+DIM="\033[2m"
+CYAN="\033[38;5;51m"
+PURPLE="\033[38;5;141m"
+GREEN="\033[38;5;84m"
+YELLOW="\033[38;5;215m"
+RED="\033[38;5;203m"
+GRAY="\033[38;5;240m"
+MUTED="\033[38;5;246m"
+WHITE="\033[38;5;255m"
+
+clear 2>/dev/null || printf "\033[H\033[2J"
+
+# ------------------------------------------------------------------------------
+# 1. DETECCIÓN DE SISTEMA OPERATIVO Y ARQUITECTURA (Directo y sin palabras casi)
+# ------------------------------------------------------------------------------
+OS_NAME="Linux"
+OS_VER=""
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    OS_NAME="${NAME:-Linux}"
+    OS_VER="${VERSION_ID:-}"
+elif [ -f /etc/debian_version ]; then
+    OS_NAME="Debian"
+    OS_VER="$(cat /etc/debian_version)"
+elif [ -f /etc/redhat-release ]; then
+    OS_NAME="$(cat /etc/redhat-release)"
+fi
+
+ARCH="$(uname -m)"
+case "$ARCH" in
+    x86_64|amd64) ARCH_LABEL="x86_64"; ARCH_BIN="amd64" ;;
+    aarch64|arm64) ARCH_LABEL="arm64"; ARCH_BIN="arm64" ;;
+    armv7l|armhf) ARCH_LABEL="armv7"; ARCH_BIN="arm64" ;;
+    *) ARCH_LABEL="$ARCH"; ARCH_BIN="amd64" ;;
+esac
+
+OS_FULL="${OS_NAME} ${OS_VER}"
+# Limpiar espacios extra
+OS_FULL="$(echo "$OS_FULL" | xargs)"
+
+echo -e "${GRAY}╭──────────────────────────────────────────────────────────────╮${RESET}"
+printf "${GRAY}│${RESET}  ${WHITE}${BOLD}%-20s${RESET} : ${CYAN}%-37s${RESET}${GRAY}│${RESET}\n" "Sistema Detectado" "${OS_FULL} (${ARCH_LABEL})"
+echo -e "${GRAY}╰──────────────────────────────────────────────────────────────╯${RESET}"
+echo ""
+
+# ------------------------------------------------------------------------------
+# 2. SELECCIÓN DE IDIOMA (24 Idiomas con los solicitados priorizados)
+# ------------------------------------------------------------------------------
+echo -e "${GRAY}╭─ ${CYAN}${BOLD}SELECCIÓN DE IDIOMA / LANGUAGE SELECTION${RESET} ${GRAY}───────────────────╮${RESET}"
+echo -e "${GRAY}│${RESET}  ${PURPLE}01${RESET} Español        ${PURPLE}09${RESET} Русский       ${PURPLE}17${RESET} اردو          ${GRAY}│${RESET}"
+echo -e "${GRAY}│${RESET}  ${PURPLE}02${RESET} English        ${PURPLE}10${RESET} Deutsch       ${PURPLE}18${RESET} فارسی         ${GRAY}│${RESET}"
+echo -e "${GRAY}│${RESET}  ${PURPLE}03${RESET} Português      ${PURPLE}11${RESET} Italiano      ${PURPLE}19${RESET} Polski        ${GRAY}│${RESET}"
+echo -e "${GRAY}│${RESET}  ${PURPLE}04${RESET} B. Indonesia   ${PURPLE}12${RESET} Türkçe        ${PURPLE}20${RESET} Nederlands    ${GRAY}│${RESET}"
+echo -e "${GRAY}│${RESET}  ${PURPLE}05${RESET} العربية        ${PURPLE}13${RESET} Tiếng Việt    ${PURPLE}21${RESET} Українська    ${GRAY}│${RESET}"
+echo -e "${GRAY}│${RESET}  ${PURPLE}06${RESET} 中文           ${PURPLE}14${RESET} 한국어        ${PURPLE}22${RESET} ภาษาไทย       ${GRAY}│${RESET}"
+echo -e "${GRAY}│${RESET}  ${PURPLE}07${RESET} 日本語         ${PURPLE}15${RESET} हिन्दी         ${PURPLE}23${RESET} Ελληνικά      ${GRAY}│${RESET}"
+echo -e "${GRAY}│${RESET}  ${PURPLE}08${RESET} Français       ${PURPLE}16${RESET} বাংলা          ${PURPLE}24${RESET} Tagalog       ${GRAY}│${RESET}"
+echo -e "${GRAY}╰──────────────────────────────────────────────────────────────╯${RESET}"
+
+read -r -p "  Seleccione su idioma / Select language [1-24] [default: 1]: " LANG_CHOICE
+LANG_CHOICE="${LANG_CHOICE:-1}"
+
+case "$LANG_CHOICE" in
+    1|01) LANG_CODE="es"; LANG_NAME="Español" ;;
+    2|02) LANG_CODE="en"; LANG_NAME="English" ;;
+    3|03) LANG_CODE="pt"; LANG_NAME="Português" ;;
+    4|04) LANG_CODE="id"; LANG_NAME="Bahasa Indonesia" ;;
+    5|05) LANG_CODE="ar"; LANG_NAME="العربية" ;;
+    6|06) LANG_CODE="zh"; LANG_NAME="中文" ;;
+    7|07) LANG_CODE="ja"; LANG_NAME="日本語" ;;
+    8|08) LANG_CODE="fr"; LANG_NAME="Français" ;;
+    9|09) LANG_CODE="ru"; LANG_NAME="Русский" ;;
+    10)   LANG_CODE="de"; LANG_NAME="Deutsch" ;;
+    11)   LANG_CODE="it"; LANG_NAME="Italiano" ;;
+    12)   LANG_CODE="tr"; LANG_NAME="Türkçe" ;;
+    13)   LANG_CODE="vi"; LANG_NAME="Tiếng Việt" ;;
+    14)   LANG_CODE="ko"; LANG_NAME="한국어" ;;
+    15)   LANG_CODE="hi"; LANG_NAME="हिन्दी" ;;
+    16)   LANG_CODE="bn"; LANG_NAME="বাংলা" ;;
+    17)   LANG_CODE="ur"; LANG_NAME="اردو" ;;
+    18)   LANG_CODE="fa"; LANG_NAME="فارسی" ;;
+    19)   LANG_CODE="pl"; LANG_NAME="Polski" ;;
+    20)   LANG_CODE="nl"; LANG_NAME="Nederlands" ;;
+    21)   LANG_CODE="uk"; LANG_NAME="Українська" ;;
+    22)   LANG_CODE="th"; LANG_NAME="ภาษาไทย" ;;
+    23)   LANG_CODE="el"; LANG_NAME="Ελληνικά" ;;
+    24)   LANG_CODE="tl"; LANG_NAME="Tagalog" ;;
+    *)    LANG_CODE="es"; LANG_NAME="Español" ;;
+esac
+
+echo -e "  ${GREEN}✓${RESET} ${MUTED}Idioma establecido:${RESET} ${WHITE}${BOLD}${LANG_NAME}${RESET}\n"
+
+# ------------------------------------------------------------------------------
+# 3. PRUEBA DE NERD FONTS (Detección visual interactiva)
+# ------------------------------------------------------------------------------
+echo -e "${GRAY}╭─ ${CYAN}${BOLD}PRUEBA DE ICONOS NERD FONTS${RESET} ${GRAY}────────────────────────────────╮${RESET}"
+echo -e "${GRAY}│                                                              │${RESET}"
+echo -e "${GRAY}│${RESET}         ${CYAN}󰌘   󰒋   󱘖   󰛳   󰍹   󰅟      󰣇      󰒃${RESET}            ${GRAY}│${RESET}"
+echo -e "${GRAY}│                                                              │${RESET}"
+echo -e "${GRAY}│${RESET}  ${MUTED}¿Puedes ver los iconos de arriba correctamente?${RESET}             ${GRAY}│${RESET}"
+echo -e "${GRAY}│${RESET}  ${DIM}(Si ves cuadros vacíos o símbolos rotos, elija 'n')${RESET}          ${GRAY}│${RESET}"
+echo -e "${GRAY}╰──────────────────────────────────────────────────────────────╯${RESET}"
+
+read -r -p "  ¿Activar iconos Nerd Fonts? [s/N]: " NF_INPUT
+case "$NF_INPUT" in
+    [sS]|[yY]|[sS][iI]|[yY][eE][sS])
+        NERD_FONTS="true"
+        echo -e "  ${GREEN}✓${RESET} ${WHITE}Modo Nerd Fonts ACTIVADO.${RESET}\n"
+        ;;
+    *)
+        NERD_FONTS="false"
+        echo -e "  ${YELLOW}○${RESET} ${WHITE}Modo estándar seleccionado (iconos clásicos).${RESET}\n"
+        ;;
+esac
+
+# ------------------------------------------------------------------------------
+# 4. INSTALACIÓN CON RUEDITA ANIMADA (Spinner)
+# ------------------------------------------------------------------------------
+LOG_FILE="/tmp/danael-install.log"
+: > "$LOG_FILE"
+
+spinner() {
+    local pid=$1
+    local msg="$2"
+    local spin='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
+    local i=0
+    # Ocultar cursor
+    printf "\033[?25l"
+    while kill -0 "$pid" 2>/dev/null; do
+        local char="${spin:i++%${#spin}:1}"
+        printf "\r  ${CYAN}%s${RESET}  %s" "$char" "$msg"
+        sleep 0.08
+    done
+    wait "$pid" 2>/dev/null
+    local exitcode=$?
+    # Mostrar cursor
+    printf "\033[?25h"
+    if [ $exitcode -eq 0 ]; then
+        printf "\r  ${GREEN}✓${RESET}  %s\n" "$msg"
+    else
+        printf "\r  ${RED}✗${RESET}  %s ${RED}(Error - ver %s)${RESET}\n" "$msg" "$LOG_FILE"
+        exit 1
+    fi
+}
+
+do_install() {
+    # 1. Instalar paquetes necesarios según el gestor del sistema
+    if command -v apt-get >/dev/null 2>&1; then
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get update -qq >> "$LOG_FILE" 2>&1
+        apt-get install -y -qq curl wget openssl iptables ca-certificates tar gzip net-tools procps >> "$LOG_FILE" 2>&1
+    elif command -v pacman >/dev/null 2>&1; then
+        pacman -Sy --noconfirm curl wget openssl iptables ca-certificates tar gzip net-tools procps >> "$LOG_FILE" 2>&1
+    elif command -v dnf >/dev/null 2>&1; then
+        dnf install -y -q curl wget openssl iptables ca-certificates tar gzip net-tools procps >> "$LOG_FILE" 2>&1
+    elif command -v yum >/dev/null 2>&1; then
+        yum install -y -q curl wget openssl iptables ca-certificates tar gzip net-tools procps >> "$LOG_FILE" 2>&1
+    elif command -v apk >/dev/null 2>&1; then
+        apk update >> "$LOG_FILE" 2>&1
+        apk add curl wget openssl iptables ca-certificates tar gzip net-tools procps >> "$LOG_FILE" 2>&1
+    fi
+
+    # 2. Preparar directorios base
+    mkdir -p /etc/danael-h4x /var/log/danael /usr/local/bin
+
+    # 3. Instalar binario compilado (Local o descargado desde GitHub)
+    local BIN_INSTALLED=false
+    local ARCH_DIR="x86"
+    if [ "$ARCH_BIN" = "arm64" ]; then
+        ARCH_DIR="arm64"
+    fi
+
+    # Opción A: Archivo local (si se ejecuta en el directorio del proyecto)
+    if [ -f "./${ARCH_DIR}/danael-linux-${ARCH_BIN}" ]; then
+        cp -f "./${ARCH_DIR}/danael-linux-${ARCH_BIN}" "/usr/local/bin/danael.new"
+        mv -f "/usr/local/bin/danael.new" "/usr/local/bin/danael"
+        BIN_INSTALLED=true
+    elif [ -f "./dist/danael-linux-${ARCH_BIN}" ]; then
+        cp -f "./dist/danael-linux-${ARCH_BIN}" "/usr/local/bin/danael.new"
+        mv -f "/usr/local/bin/danael.new" "/usr/local/bin/danael"
+        BIN_INSTALLED=true
+    elif [ -f "./danael" ]; then
+        cp -f "./danael" "/usr/local/bin/danael.new"
+        mv -f "/usr/local/bin/danael.new" "/usr/local/bin/danael"
+        BIN_INSTALLED=true
+    elif [ -f "/root/danael-h4x/${ARCH_DIR}/danael-linux-${ARCH_BIN}" ]; then
+        cp -f "/root/danael-h4x/${ARCH_DIR}/danael-linux-${ARCH_BIN}" "/usr/local/bin/danael.new"
+        mv -f "/usr/local/bin/danael.new" "/usr/local/bin/danael"
+        BIN_INSTALLED=true
+    elif [ -f "/root/danael-h4x/dist/danael-linux-${ARCH_BIN}" ]; then
+        cp -f "/root/danael-h4x/dist/danael-linux-${ARCH_BIN}" "/usr/local/bin/danael.new"
+        mv -f "/usr/local/bin/danael.new" "/usr/local/bin/danael"
+        BIN_INSTALLED=true
+    elif [ -f "/root/danael-h4x/danael" ]; then
+        cp -f "/root/danael-h4x/danael" "/usr/local/bin/danael.new"
+        mv -f "/usr/local/bin/danael.new" "/usr/local/bin/danael"
+        BIN_INSTALLED=true
+    fi
+
+    # Opción B: Descargar binario precompilado desde GitHub (para usuarios en VPS limpias)
+    if [ "$BIN_INSTALLED" = false ]; then
+        local PRIMARY_URL="https://github.com/${GITHUB_REPO}/raw/refs/heads/${GITHUB_BRANCH}/${ARCH_DIR}/danael-linux-${ARCH_BIN}"
+        local RAW_URL="https://raw.githubusercontent.com/${GITHUB_REPO}/${GITHUB_BRANCH}/${ARCH_DIR}/danael-linux-${ARCH_BIN}"
+        local RELEASE_URL="https://github.com/${GITHUB_REPO}/releases/latest/download/danael-linux-${ARCH_BIN}"
+
+        if curl -fsSL -o /usr/local/bin/danael.new "$PRIMARY_URL" >> "$LOG_FILE" 2>&1; then
+            mv -f /usr/local/bin/danael.new /usr/local/bin/danael
+            BIN_INSTALLED=true
+        elif curl -fsSL -o /usr/local/bin/danael.new "$RAW_URL" >> "$LOG_FILE" 2>&1; then
+            mv -f /usr/local/bin/danael.new /usr/local/bin/danael
+            BIN_INSTALLED=true
+        elif curl -fsSL -o /usr/local/bin/danael.new "$RELEASE_URL" >> "$LOG_FILE" 2>&1; then
+            mv -f /usr/local/bin/danael.new /usr/local/bin/danael
+            BIN_INSTALLED=true
+        fi
+    fi
+
+    # Opción C: Compilación local si Go está disponible
+    if [ "$BIN_INSTALLED" = false ] && command -v go >/dev/null 2>&1 && [ -f "/root/danael-h4x/main.go" ]; then
+        (cd /root/danael-h4x && go build -ldflags="-s -w" -o /usr/local/bin/danael.new main.go && mv -f /usr/local/bin/danael.new /usr/local/bin/danael) >> "$LOG_FILE" 2>&1
+        BIN_INSTALLED=true
+    fi
+
+    if [ ! -s "/usr/local/bin/danael" ]; then
+        echo "Error: No se pudo obtener el binario ejecutable danael." >> "$LOG_FILE"
+        exit 1
+    fi
+    chmod 755 /usr/local/bin/danael
+
+    # 4. Certificados SSL autofirmados por defecto si no existen
+    if [ ! -f /etc/danael-h4x/cert.pem ] || [ ! -f /etc/danael-h4x/key.pem ]; then
+        openssl req -new -newkey rsa:2048 -days 3650 -nodes -x509 \
+            -subj "/C=MX/ST=CDMX/L=Mexico/O=DanaelH4x/CN=danael.internal" \
+            -keyout /etc/danael-h4x/key.pem -out /etc/danael-h4x/cert.pem >> "$LOG_FILE" 2>&1
+        chmod 600 /etc/danael-h4x/key.pem /etc/danael-h4x/cert.pem
+    fi
+
+    # 5. Configurar servicio systemd
+    cat << 'EOF' > /etc/systemd/system/danael.service
+[Unit]
+Description=Danael H4x Proxy Daemon (WebSocket & SSL)
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/danael daemon
+Restart=always
+RestartSec=3
+LimitNOFILE=65535
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    systemctl daemon-reload >> "$LOG_FILE" 2>&1
+    systemctl enable danael.service >> "$LOG_FILE" 2>&1
+}
+
+# Ejecutar proceso con animación
+do_install &
+INSTALL_PID=$!
+spinner $INSTALL_PID "Instalando lo necesario..."
+
+echo ""
+
+# ------------------------------------------------------------------------------
+# 5. PREGUNTAS DE CONFIGURACIÓN POST-INSTALACIÓN (Con omisión / Enter default)
+# ------------------------------------------------------------------------------
+echo -e "${GRAY}╭─ ${CYAN}${BOLD}AJUSTES INICIALES${RESET} ${GRAY}───────────────────────────────────────────╮${RESET}"
+echo -e "${GRAY}│${RESET}  ${MUTED}Personalice las funciones del panel (Enter para omitir)${RESET}     ${GRAY}│${RESET}"
+echo -e "${GRAY}╰──────────────────────────────────────────────────────────────╯${RESET}"
+
+# Pregunta 1: Contador de MB / Cuota de Datos
+read -r -p "  1. ¿Activar contador y límite de datos (MB/GB) por cuenta? [s/N]: " QUOTA_INPUT
+case "$QUOTA_INPUT" in
+    [sS]|[yY]|[sS][iI]|[yY][eE][sS])
+        DATA_QUOTA="true"
+        echo -e "     ${GREEN}✓${RESET} Cuota de datos: ${GREEN}ACTIVADA${RESET}"
+        ;;
+    *)
+        DATA_QUOTA="false"
+        echo -e "     ${YELLOW}○${RESET} Cuota de datos: ${MUTED}Desactivada (Ilimitado por defecto)${RESET}"
+        ;;
+esac
+
+# Pregunta 2: CheckUser API y Puerto
+read -r -p "  2. ¿Activar servicio CheckUser API? [S/n]: " CU_INPUT
+case "$CU_INPUT" in
+    [nN]|[nN][oO])
+        CHECKUSER_ENABLED="false"
+        CHECKUSER_PORT=5000
+        echo -e "     ${YELLOW}○${RESET} CheckUser API: ${MUTED}Desactivado${RESET}"
+        ;;
+    *)
+        CHECKUSER_ENABLED="true"
+        read -r -p "     Puerto para CheckUser API [default: 5000]: " CU_PORT_IN
+        CHECKUSER_PORT="${CU_PORT_IN:-5000}"
+        echo -e "     ${GREEN}✓${RESET} CheckUser API: ${GREEN}ACTIVADO en puerto ${CHECKUSER_PORT}${RESET}"
+        ;;
+esac
+
+# Pregunta 3: DualMode 443 (NGINX interno para V2Ray y SSL)
+read -r -p "  3. ¿Activar DualMode puerto 443 (NGINX interno V2Ray + SSL)? [s/N]: " DUAL_INPUT
+case "$DUAL_INPUT" in
+    [sS]|[yY]|[sS][iI]|[yY][eE][sS])
+        DUALMODE_443="true"
+        echo -e "     ${CYAN}⠋${RESET} Configurando NGINX DualMode SNI 443..."
+        if command -v apt-get >/dev/null 2>&1; then
+            apt-get install -y -qq nginx libnginx-mod-stream >> "$LOG_FILE" 2>&1 || true
+        elif command -v pacman >/dev/null 2>&1; then
+            pacman -S --noconfirm nginx >> "$LOG_FILE" 2>&1 || true
+        elif command -v dnf >/dev/null 2>&1; then
+            dnf install -y -q nginx >> "$LOG_FILE" 2>&1 || true
+        fi
+
+        # Configuración de Stream SNI en NGINX
+        mkdir -p /etc/nginx/conf.d
+        cat << 'NGINX_CONF' > /etc/nginx/conf.d/danael_dualmode.conf
+stream {
+    map $ssl_preread_server_name $dualmode_backend {
+        default ssl_ssh_internal;
+    }
+    upstream ssl_ssh_internal {
+        server 127.0.0.1:444;
+    }
+    upstream v2ray_tls_internal {
+        server 127.0.0.1:8443;
+    }
+    server {
+        listen 443;
+        proxy_pass $dualmode_backend;
+        ssl_preread on;
+    }
+}
+NGINX_CONF
+        systemctl enable --now nginx >> "$LOG_FILE" 2>&1 || true
+        echo -e "     ${GREEN}✓${RESET} DualMode 443: ${GREEN}ACTIVADO (SNI Multiplexer)${RESET}"
+        ;;
+    *)
+        DUALMODE_443="false"
+        echo -e "     ${YELLOW}○${RESET} DualMode 443: ${MUTED}Omitido (Modo estándar directo)${RESET}"
+        ;;
+esac
+
+# ------------------------------------------------------------------------------
+# 6. GENERAR CONFIGURACIÓN FINAL (/etc/danael-h4x/config.json)
+# ------------------------------------------------------------------------------
+CONFIG_FILE="/etc/danael-h4x/config.json"
+
+# Si ya existe configuración previa, mantener puertos o actualizar con preferencias
+cat << EOF > "$CONFIG_FILE"
+{
+  "websocket_enabled": true,
+  "websocket_port": 80,
+  "websocket_ports": [80],
+  "ssl_enabled": true,
+  "ssl_port": 444,
+  "ssl_ports": [444],
+  "ssl_mode": "direct",
+  "ssh_port": 22,
+  "custom_response": "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n\r\n",
+  "checkuser_enabled": ${CHECKUSER_ENABLED},
+  "checkuser_port": ${CHECKUSER_PORT},
+  "checkuser_date_format": "YYYY-MM-DD",
+  "checkuser_message": "Conexion exitosa",
+  "checkuser_geo_enabled": true,
+  "data_quota_enabled": ${DATA_QUOTA},
+  "v2ray_enabled": true,
+  "v2ray_transport_mode": "ws",
+  "v2ray_vmess_port": 8080,
+  "v2ray_vmess_path": "/vmess",
+  "v2ray_vmess_tcp_port": 8082,
+  "v2ray_vless_port": 8081,
+  "v2ray_vless_path": "/vless",
+  "v2ray_vless_tcp_port": 8083,
+  "v2ray_trojan_port": 8084,
+  "v2ray_trojan_path": "/trojan",
+  "v2ray_trojan_tcp_port": 8085,
+  "v2ray_ss_port": 8300,
+  "v2ray_ss_method": "aes-256-gcm",
+  "v2ray_tls_enabled": true,
+  "v2ray_tls_port": 443,
+  "v2ray_domain": "{ipvps}.nip.io",
+  "v2ray_sni": "",
+  "v2ray_vless_tls_port": 8443,
+  "v2ray_trojan_tls_port": 8084,
+  "bhttp_enabled": false,
+  "bhttp_port": 8088,
+  "badvpn_enabled": false,
+  "badvpn_port": 7300,
+  "dropbear_enabled": false,
+  "dropbear_port": 222,
+  "dropbear_ports": [222],
+  "dropbear_version": "2019.78",
+  "language": "${LANG_CODE}",
+  "nerd_fonts": ${NERD_FONTS},
+  "dualmode_443_enabled": ${DUALMODE_443}
+}
+EOF
+
+# Reiniciar servicio para aplicar todos los cambios
+systemctl restart danael.service >> "$LOG_FILE" 2>&1 || true
+
+echo ""
+sleep 0.5
+clear 2>/dev/null || printf "\033[H\033[2J"
+
+# ------------------------------------------------------------------------------
+# 7. LOGO DE MÉXICO RENDERIZADO EN ANSI PURO (▀) Y TARJETA FINAL
+# ------------------------------------------------------------------------------
+print_mexico_logo() {
+    # Embebe el logo de México renderizado en caracteres ANSI puro (▀)
+    cat << 'LOGO_EOF' | base64 -d
+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
+LOGO_EOF
+    echo ""
+}
+
+print_mexico_logo
+
+IP_PUBLIC="$(curl -s4 --max-time 3 https://api.ipify.org 2>/dev/null || ip -4 addr show scope global | grep inet | head -n1 | awk '{print $2}' | cut -d/ -f1)"
+
+echo -e "${GRAY}╭──────────────────────────────────────────────────────────────╮${RESET}"
+echo -e "${GRAY}│${RESET}                 ${GREEN}${BOLD}¡INSTALACIÓN COMPLETADA CON ÉXITO!${RESET}           ${GRAY}│${RESET}"
+echo -e "${GRAY}├──────────────────────────────────────────────────────────────┤${RESET}"
+echo -e "${GRAY}│${RESET}  ${MUTED}Para ingresar al panel de control en cualquier momento:${RESET}     ${GRAY}│${RESET}"
+echo -e "${GRAY}│                                                              │${RESET}"
+echo -e "${GRAY}│${RESET}                     ${CYAN}${BOLD}danael${RESET}                                   ${GRAY}│${RESET}"
+echo -e "${GRAY}│                                                              │${RESET}"
+printf "${GRAY}│${RESET}  ${WHITE}%-22s${RESET} : ${GREEN}%-35s${RESET}${GRAY}│${RESET}\n" "Servicio Principal" "● ACTIVO (danael.service)"
+printf "${GRAY}│${RESET}  ${WHITE}%-22s${RESET} : ${CYAN}%-35s${RESET}${GRAY}│${RESET}\n" "WebSocket Proxy" "Puerto 80 (HTTP Payload)"
+printf "${GRAY}│${RESET}  ${WHITE}%-22s${RESET} : ${CYAN}%-35s${RESET}${GRAY}│${RESET}\n" "SSL / TLS Proxy" "Puerto 444 (Directo/WS)"
+if [ "$CHECKUSER_ENABLED" = "true" ]; then
+    printf "${GRAY}│${RESET}  ${WHITE}%-22s${RESET} : ${YELLOW}%-35s${RESET}${GRAY}│${RESET}\n" "CheckUser API" "http://${IP_PUBLIC}:${CHECKUSER_PORT}/check/{user}"
+fi
+printf "${GRAY}│${RESET}  ${WHITE}%-22s${RESET} : ${PURPLE}%-35s${RESET}${GRAY}│${RESET}\n" "Nerd Fonts" "${NERD_FONTS}"
+printf "${GRAY}│${RESET}  ${WHITE}%-22s${RESET} : ${PURPLE}%-35s${RESET}${GRAY}│${RESET}\n" "Idioma Seleccionado" "${LANG_NAME}"
+echo -e "${GRAY}╰──────────────────────────────────────────────────────────────╯${RESET}"
+echo ""
