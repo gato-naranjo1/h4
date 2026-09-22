@@ -1,8 +1,8 @@
 {
-  "version": "1.0.1",
+  "version": "1.0.2",
   "min_version": "1.0.0",
   "release_date": "2026-09-22",
-  "changelog": "Test Update",
+  "changelog": "New Update",
   "amd64_url": "https://raw.githubusercontent.com/gato-naranjo1/h4/refs/heads/main/x86/danael-linux-amd64",
   "arm64_url": "https://raw.githubusercontent.com/gato-naranjo1/h4/refs/heads/main/arm64/danael-linux-arm64",
   "install_url": "https://raw.githubusercontent.com/gato-naranjo1/h4/refs/heads/main/install.sh"
