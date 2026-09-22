@@ -22,6 +22,50 @@ GRAY="\033[38;5;240m"
 MUTED="\033[38;5;246m"
 WHITE="\033[38;5;255m"
 
+DASHES="──────────────────────────────────────────────────────────────"
+
+print_box_top() {
+    printf "${GRAY}╭%s╮${RESET}\n" "$DASHES"
+}
+
+print_box_bottom() {
+    printf "${GRAY}╰%s╯${RESET}\n" "$DASHES"
+}
+
+print_box_divider() {
+    printf "${GRAY}├%s┤${RESET}\n" "$DASHES"
+}
+
+print_box_header() {
+    local title="$1"
+    local clean
+    clean="$(printf "%b" "$title" | sed -r "s/\x1B\[[0-9;]*[a-zA-Z]//g")"
+    local w
+    w="$(printf "%s" "$clean" | wc -L)"
+    local rem=$(( 59 - w ))
+    if [ $rem -lt 1 ]; then
+        rem=1
+    fi
+    printf "${GRAY}╭─ %b ${GRAY}%s╮${RESET}\n" "$title" "${DASHES:0:rem}"
+}
+
+print_box_row() {
+    local content="$1"
+    local clean
+    clean="$(printf "%b" "$content" | sed -r "s/\x1B\[[0-9;]*[a-zA-Z]//g")"
+    local w
+    w="$(printf "%s" "$clean" | wc -L)"
+    local pad=$(( 62 - w ))
+    if [ $pad -lt 0 ]; then
+        pad=0
+    fi
+    local spaces=""
+    if [ $pad -gt 0 ]; then
+        spaces="$(printf "%*s" "$pad" "")"
+    fi
+    printf "${GRAY}│${RESET}%b%s${GRAY}│${RESET}\n" "$content" "$spaces"
+}
+
 clear 2>/dev/null || printf "\033[H\033[2J"
 
 ask_user() {
@@ -69,21 +113,21 @@ esac
 OS_FULL="${OS_NAME} ${OS_VER}"
 OS_FULL="$(echo "$OS_FULL" | xargs)"
 
-echo -e "${GRAY}╭──────────────────────────────────────────────────────────────╮${RESET}"
-printf "${GRAY}│${RESET}  ${WHITE}${BOLD}%-20s${RESET} : ${CYAN}%-37s${RESET}${GRAY}│${RESET}\n" "Sistema Detectado" "${OS_FULL} (${ARCH_LABEL})"
-echo -e "${GRAY}╰──────────────────────────────────────────────────────────────╯${RESET}"
+print_box_top
+print_box_row "  ${WHITE}${BOLD}Sistema Detectado${RESET}    : ${CYAN}${OS_FULL} (${ARCH_LABEL})${RESET}"
+print_box_bottom
 echo ""
 
-echo -e "${GRAY}╭─ ${CYAN}${BOLD}SELECCIÓN DE IDIOMA / LANGUAGE SELECTION${RESET} ${GRAY}───────────────────╮${RESET}"
-echo -e "${GRAY}│${RESET}  ${PURPLE}01${RESET} Español        ${PURPLE}09${RESET} Русский       ${PURPLE}17${RESET} اردو          ${GRAY}│${RESET}"
-echo -e "${GRAY}│${RESET}  ${PURPLE}02${RESET} English        ${PURPLE}10${RESET} Deutsch       ${PURPLE}18${RESET} فارسی         ${GRAY}│${RESET}"
-echo -e "${GRAY}│${RESET}  ${PURPLE}03${RESET} Português      ${PURPLE}11${RESET} Italiano      ${PURPLE}19${RESET} Polski        ${GRAY}│${RESET}"
-echo -e "${GRAY}│${RESET}  ${PURPLE}04${RESET} B. Indonesia   ${PURPLE}12${RESET} Türkçe        ${PURPLE}20${RESET} Nederlands    ${GRAY}│${RESET}"
-echo -e "${GRAY}│${RESET}  ${PURPLE}05${RESET} العربية        ${PURPLE}13${RESET} Tiếng Việt    ${PURPLE}21${RESET} Українська    ${GRAY}│${RESET}"
-echo -e "${GRAY}│${RESET}  ${PURPLE}06${RESET} 中文           ${PURPLE}14${RESET} 한국어        ${PURPLE}22${RESET} ภาษาไทย       ${GRAY}│${RESET}"
-echo -e "${GRAY}│${RESET}  ${PURPLE}07${RESET} 日本語         ${PURPLE}15${RESET} हिन्दी         ${PURPLE}23${RESET} Ελληνικά      ${GRAY}│${RESET}"
-echo -e "${GRAY}│${RESET}  ${PURPLE}08${RESET} Français       ${PURPLE}16${RESET} বাংলা          ${PURPLE}24${RESET} Tagalog       ${GRAY}│${RESET}"
-echo -e "${GRAY}╰──────────────────────────────────────────────────────────────╯${RESET}"
+print_box_header "${CYAN}${BOLD}SELECCIÓN DE IDIOMA / LANGUAGE SELECTION${RESET}"
+print_box_row "  ${PURPLE}01${RESET} Español           ${PURPLE}09${RESET} Русский           ${PURPLE}17${RESET} اردو"
+print_box_row "  ${PURPLE}02${RESET} English           ${PURPLE}10${RESET} Deutsch           ${PURPLE}18${RESET} فارسی"
+print_box_row "  ${PURPLE}03${RESET} Português         ${PURPLE}11${RESET} Italiano          ${PURPLE}19${RESET} Polski"
+print_box_row "  ${PURPLE}04${RESET} B. Indonesia      ${PURPLE}12${RESET} Türkçe            ${PURPLE}20${RESET} Nederlands"
+print_box_row "  ${PURPLE}05${RESET} العربية           ${PURPLE}13${RESET} Tiếng Việt        ${PURPLE}21${RESET} Українська"
+print_box_row "  ${PURPLE}06${RESET} 中文              ${PURPLE}14${RESET} 한국어            ${PURPLE}22${RESET} ภาษาไทย"
+print_box_row "  ${PURPLE}07${RESET} 日本語            ${PURPLE}15${RESET} हिन्दी             ${PURPLE}23${RESET} Ελληνικά"
+print_box_row "  ${PURPLE}08${RESET} Français          ${PURPLE}16${RESET} বাংলা             ${PURPLE}24${RESET} Tagalog"
+print_box_bottom
 
 LANG_CHOICE="$(ask_user "  Seleccione su idioma / Select language [1-24] [default: 1]: " "1")"
 
@@ -115,25 +159,440 @@ case "$LANG_CHOICE" in
     *)    LANG_CODE="es"; LANG_NAME="Español" ;;
 esac
 
-echo -e "  ${GREEN}✓${RESET} ${MUTED}Idioma establecido:${RESET} ${WHITE}${BOLD}${LANG_NAME}${RESET}\n"
+case "$LANG_CODE" in
+    es)
+        MSG_LANG_SET="Idioma establecido: %s"
+        TITLE_ICON_TEST="PRUEBA DE SOPORTE DE ICONOS"
+        MSG_ICON_Q1="¿Puedes ver los iconos de arriba correctamente?"
+        MSG_ICON_Q2="(Si ves cuadros vacíos o rotos, elija \"n\")"
+        ASK_ICON="¿Activar soporte de iconos avanzados? [s/N]: "
+        MSG_ICON_ON="Iconos avanzados ACTIVADOS."
+        MSG_ICON_OFF="Modo estándar seleccionado (iconos clásicos)."
+        SPINNER_MSG="Instalando lo necesario..."
+        TITLE_SETTINGS="AJUSTES INICIALES"
+        SUB_SETTINGS="Personalice las funciones del panel (Enter para omitir)"
+        ASK_QUOTA="1. ¿Activar contador y límite de datos (MB/GB) por cuenta? [s/N]: "
+        MSG_QUOTA_ON="Cuota de datos: ACTIVADA"
+        MSG_QUOTA_OFF="Cuota de datos: Desactivada (Ilimitado por defecto)"
+        ASK_CU="2. ¿Activar servicio CheckUser API? [S/n]: "
+        ASK_CU_PORT="   Puerto para CheckUser API [default: 5000]: "
+        MSG_CU_ON="CheckUser API: ACTIVADO en puerto %s"
+        MSG_CU_OFF="CheckUser API: Desactivado"
+        ASK_DUAL="3. ¿Activar DualMode puerto 443 (V2Ray + SSL simultáneo)? [s/N]: "
+        MSG_DUAL_CONFIG="Configurando DualMode puerto 443..."
+        MSG_DUAL_ON="DualMode 443: ACTIVADO (Multiplexor SNI)"
+        MSG_DUAL_OFF="DualMode 443: Desactivado"
+        CARD_SUCCESS="¡INSTALACIÓN COMPLETADA CON ÉXITO!"
+        CARD_ACCESS="Para ingresar al panel de control en cualquier momento:"
+        LBL_SVC_MAIN="Servicio Principal"
+        VAL_SVC_MAIN="ACTIVO (danael.service)"
+        LBL_SVC_WS="WebSocket Proxy"
+        VAL_SVC_WS="Puerto 80 (HTTP Payload)"
+        LBL_SVC_SSL="SSL / TLS Proxy"
+        VAL_SVC_SSL="Puerto 444 (Directo/WS)"
+        LBL_SVC_ICONS="Iconos Avanzados"
+        LBL_SVC_LANG="Idioma"
+        FOOTER_LINE="                BY DANAELH4X Y HECHO EN MÉXICO                "
+        ;;
+    en)
+        MSG_LANG_SET="Language set: %s"
+        TITLE_ICON_TEST="ICON SUPPORT TEST"
+        MSG_ICON_Q1="Can you see the icons above correctly?"
+        MSG_ICON_Q2="(If you see empty boxes or broken symbols, choose \"n\")"
+        ASK_ICON="Enable advanced icon support? [y/N]: "
+        MSG_ICON_ON="Advanced icons ENABLED."
+        MSG_ICON_OFF="Standard mode selected (classic icons)."
+        SPINNER_MSG="Installing required components..."
+        TITLE_SETTINGS="INITIAL SETTINGS"
+        SUB_SETTINGS="Customize panel features (Press Enter to skip)"
+        ASK_QUOTA="1. Enable data quota counter & limit (MB/GB) per account? [y/N]: "
+        MSG_QUOTA_ON="Data quota: ENABLED"
+        MSG_QUOTA_OFF="Data quota: Disabled (Unlimited by default)"
+        ASK_CU="2. Enable CheckUser API service? [Y/n]: "
+        ASK_CU_PORT="   Port for CheckUser API [default: 5000]: "
+        MSG_CU_ON="CheckUser API: ENABLED on port %s"
+        MSG_CU_OFF="CheckUser API: Disabled"
+        ASK_DUAL="3. Enable DualMode on port 443 (V2Ray + SSL simultaneous)? [y/N]: "
+        MSG_DUAL_CONFIG="Configuring DualMode on port 443..."
+        MSG_DUAL_ON="DualMode 443: ENABLED (SNI Multiplexer)"
+        MSG_DUAL_OFF="DualMode 443: Disabled"
+        CARD_SUCCESS="INSTALLATION COMPLETED SUCCESSFULLY!"
+        CARD_ACCESS="To access the control panel at any time:"
+        LBL_SVC_MAIN="Main Service"
+        VAL_SVC_MAIN="ACTIVE (danael.service)"
+        LBL_SVC_WS="WebSocket Proxy"
+        VAL_SVC_WS="Port 80 (HTTP Payload)"
+        LBL_SVC_SSL="SSL / TLS Proxy"
+        VAL_SVC_SSL="Port 444 (Direct/WS)"
+        LBL_SVC_ICONS="Advanced Icons"
+        LBL_SVC_LANG="Language"
+        FOOTER_LINE="                BY DANAELH4X & MADE IN MEXICO                 "
+        ;;
+    pt)
+        MSG_LANG_SET="Idioma definido: %s"
+        TITLE_ICON_TEST="TESTE DE SUPORTE A ÍCONES"
+        MSG_ICON_Q1="Você consegue ver os ícones acima corretamente?"
+        MSG_ICON_Q2="(Se você vir caixas vazias ou quebradas, escolha \"n\")"
+        ASK_ICON="Ativar suporte a ícones avançados? [s/N]: "
+        MSG_ICON_ON="Ícones avançados ATIVADOS."
+        MSG_ICON_OFF="Modo padrão selecionado (ícones clássicos)."
+        SPINNER_MSG="Instalando componentes necessários..."
+        TITLE_SETTINGS="CONFIGURAÇÕES INICIAIS"
+        SUB_SETTINGS="Personalize os recursos do painel (Enter para pular)"
+        ASK_QUOTA="1. Ativar contador e limite de dados (MB/GB) por conta? [s/N]: "
+        MSG_QUOTA_ON="Cota de dados: ATIVADA"
+        MSG_QUOTA_OFF="Cota de dados: Desativada (Ilimitado por padrão)"
+        ASK_CU="2. Ativar serviço CheckUser API? [S/n]: "
+        ASK_CU_PORT="   Porta para CheckUser API [padrão: 5000]: "
+        MSG_CU_ON="CheckUser API: ATIVADO na porta %s"
+        MSG_CU_OFF="CheckUser API: Desativado"
+        ASK_DUAL="3. Ativar DualMode na porta 443 (V2Ray + SSL simultâneo)? [s/N]: "
+        MSG_DUAL_CONFIG="Configurando DualMode na porta 443..."
+        MSG_DUAL_ON="DualMode 443: ATIVADO (Multiplexador SNI)"
+        MSG_DUAL_OFF="DualMode 443: Desativado"
+        CARD_SUCCESS="INSTALAÇÃO CONCLUÍDA COM SUCESSO!"
+        CARD_ACCESS="Para acessar o painel de controle a qualquer momento:"
+        LBL_SVC_MAIN="Serviço Principal"
+        VAL_SVC_MAIN="ATIVO (danael.service)"
+        LBL_SVC_WS="WebSocket Proxy"
+        VAL_SVC_WS="Porta 80 (Payload HTTP)"
+        LBL_SVC_SSL="SSL / TLS Proxy"
+        VAL_SVC_SSL="Porta 444 (Direto/WS)"
+        LBL_SVC_ICONS="Ícones Avançados"
+        LBL_SVC_LANG="Idioma"
+        FOOTER_LINE="                BY DANAELH4X E FEITO NO MÉXICO                "
+        ;;
+    id)
+        MSG_LANG_SET="Bahasa diatur: %s"
+        TITLE_ICON_TEST="UJI DUKUNGAN IKON"
+        MSG_ICON_Q1="Apakah Anda dapat melihat ikon di atas dengan benar?"
+        MSG_ICON_Q2="(Jika melihat kotak kosong atau simbol rusak, pilih \"n\")"
+        ASK_ICON="Aktifkan dukungan ikon lanjutan? [y/N]: "
+        MSG_ICON_ON="Ikon lanjutan DIAKTIFKAN."
+        MSG_ICON_OFF="Mode standar dipilih (ikon klasik)."
+        SPINNER_MSG="Menginstal komponen yang diperlukan..."
+        TITLE_SETTINGS="PENGATURAN AWAL"
+        SUB_SETTINGS="Sesuaikan fitur panel (Tekan Enter untuk melewati)"
+        ASK_QUOTA="1. Aktifkan penghitung kuota data (MB/GB) per akun? [y/N]: "
+        MSG_QUOTA_ON="Kuota data: DIAKTIFKAN"
+        MSG_QUOTA_OFF="Kuota data: Dinonaktifkan (Tidak terbatas)"
+        ASK_CU="2. Aktifkan layanan CheckUser API? [Y/n]: "
+        ASK_CU_PORT="   Port untuk CheckUser API [standar: 5000]: "
+        MSG_CU_ON="CheckUser API: DIAKTIFKAN pada port %s"
+        MSG_CU_OFF="CheckUser API: Dinonaktifkan"
+        ASK_DUAL="3. Aktifkan DualMode port 443 (V2Ray + SSL simultan)? [y/N]: "
+        MSG_DUAL_CONFIG="Mengonfigurasi DualMode pada port 443..."
+        MSG_DUAL_ON="DualMode 443: DIAKTIFKAN (Multiplexer SNI)"
+        MSG_DUAL_OFF="DualMode 443: Dinonaktifkan"
+        CARD_SUCCESS="INSTALASI BERHASIL DISELESAIKAN!"
+        CARD_ACCESS="Untuk masuk ke panel kontrol kapan saja:"
+        LBL_SVC_MAIN="Layanan Utama"
+        VAL_SVC_MAIN="AKTIF (danael.service)"
+        LBL_SVC_WS="WebSocket Proxy"
+        VAL_SVC_WS="Port 80 (Payload HTTP)"
+        LBL_SVC_SSL="SSL / TLS Proxy"
+        VAL_SVC_SSL="Port 444 (Langsung/WS)"
+        LBL_SVC_ICONS="Ikon Lanjutan"
+        LBL_SVC_LANG="Bahasa"
+        FOOTER_LINE="               BY DANAELH4X & DIBUAT DI MEKSIKO               "
+        ;;
+    fr)
+        MSG_LANG_SET="Langue définie : %s"
+        TITLE_ICON_TEST="TEST DE SUPPORT D'ICÔNES"
+        MSG_ICON_Q1="Pouvez-vous voir les icônes ci-dessus correctement ?"
+        MSG_ICON_Q2="(Si vous voyez des boîtes vides ou des symboles cassés, choisissez \"n\")"
+        ASK_ICON="Activer le support des icônes avancées ? [o/N]: "
+        MSG_ICON_ON="Icônes avancées ACTIVÉES."
+        MSG_ICON_OFF="Mode standard sélectionné (icônes classiques)."
+        SPINNER_MSG="Installation des composants requis..."
+        TITLE_SETTINGS="PARAMÈTRES INITIAUX"
+        SUB_SETTINGS="Personnalisez les fonctionnalités du panneau (Entrée pour ignorer)"
+        ASK_QUOTA="1. Activer le compteur et limite de données (Mo/Go) par compte ? [o/N]: "
+        MSG_QUOTA_ON="Quota de données : ACTIVÉ"
+        MSG_QUOTA_OFF="Quota de données : Désactivé (Illimité par défaut)"
+        ASK_CU="2. Activer le service CheckUser API ? [O/n]: "
+        ASK_CU_PORT="   Port pour CheckUser API [défaut : 5000] : "
+        MSG_CU_ON="CheckUser API : ACTIVÉ sur le port %s"
+        MSG_CU_OFF="CheckUser API : Désactivé"
+        ASK_DUAL="3. Activer DualMode port 443 (V2Ray + SSL simultané) ? [o/N]: "
+        MSG_DUAL_CONFIG="Configuration de DualMode port 443..."
+        MSG_DUAL_ON="DualMode 443 : ACTIVÉ (Multiplexeur SNI)"
+        MSG_DUAL_OFF="DualMode 443 : Désactivé"
+        CARD_SUCCESS="INSTALLATION TERMINÉE AVEC SUCCÈS !"
+        CARD_ACCESS="Pour accéder au panneau de configuration à tout moment :"
+        LBL_SVC_MAIN="Service Principal"
+        VAL_SVC_MAIN="ACTIF (danael.service)"
+        LBL_SVC_WS="WebSocket Proxy"
+        VAL_SVC_WS="Port 80 (Payload HTTP)"
+        LBL_SVC_SSL="SSL / TLS Proxy"
+        VAL_SVC_SSL="Port 444 (Direct/WS)"
+        LBL_SVC_ICONS="Icônes Avancées"
+        LBL_SVC_LANG="Langue"
+        FOOTER_LINE="             BY DANAELH4X ET FABRIQUÉ AU MEXIQUE              "
+        ;;
+    ru)
+        MSG_LANG_SET="Язык установлен: %s"
+        TITLE_ICON_TEST="ПРОВЕРКА ОТОБРАЖЕНИЯ ЗНАЧКОВ"
+        MSG_ICON_Q1="Вы видите значки сверху корректно?"
+        MSG_ICON_Q2="(Если вы видите пустые квадраты или дефекты, выберите \"n\")"
+        ASK_ICON="Включить расширенные значки? [y/N]: "
+        MSG_ICON_ON="Расширенные значки ВКЛЮЧЕНЫ."
+        MSG_ICON_OFF="Выбран стандартный режим (классические значки)."
+        SPINNER_MSG="Установка необходимых компонентов..."
+        TITLE_SETTINGS="НАЧАЛЬНЫЕ НАСТРОЙКИ"
+        SUB_SETTINGS="Настройте функции панели (Enter для пропуска)"
+        ASK_QUOTA="1. Включить подсчет и лимит трафика (МБ/ГБ) на аккаунт? [y/N]: "
+        MSG_QUOTA_ON="Квота данных: ВКЛЮЧЕНА"
+        MSG_QUOTA_OFF="Квота данных: Отключена (Безлимит по умолчанию)"
+        ASK_CU="2. Включить службу CheckUser API? [Y/n]: "
+        ASK_CU_PORT="   Порт для CheckUser API [по умолчанию: 5000]: "
+        MSG_CU_ON="CheckUser API: ВКЛЮЧЕНО на порту %s"
+        MSG_CU_OFF="CheckUser API: Отключено"
+        ASK_DUAL="3. Включить DualMode на порту 443 (V2Ray + SSL одновременно)? [y/N]: "
+        MSG_DUAL_CONFIG="Настройка DualMode на порту 443..."
+        MSG_DUAL_ON="DualMode 443: ВКЛЮЧЕНО (SNI Мультиплексор)"
+        MSG_DUAL_OFF="DualMode 443: Отключено"
+        CARD_SUCCESS="УСТАНОВКА УСПЕШНО ЗАВЕРШЕНА!"
+        CARD_ACCESS="Для входа в панель управления в любое время:"
+        LBL_SVC_MAIN="Основная Служба"
+        VAL_SVC_MAIN="АКТИВЕН (danael.service)"
+        LBL_SVC_WS="WebSocket Proxy"
+        VAL_SVC_WS="Порт 80 (HTTP нагрузка)"
+        LBL_SVC_SSL="SSL / TLS Proxy"
+        VAL_SVC_SSL="Порт 444 (Прямой/WS)"
+        LBL_SVC_ICONS="Расширенные Значки"
+        LBL_SVC_LANG="Язык"
+        FOOTER_LINE="               BY DANAELH4X И СДЕЛАНО В МЕКСИКЕ               "
+        ;;
+    zh)
+        MSG_LANG_SET="语言设置为: %s"
+        TITLE_ICON_TEST="图标显示测试"
+        MSG_ICON_Q1="你能正常看到上方的图标吗？"
+        MSG_ICON_Q2="(如果看到空白方块或乱码符号，请选择 \"n\")"
+        ASK_ICON="启用高级图标支持？[y/N]: "
+        MSG_ICON_ON="高级图标支持已启用。"
+        MSG_ICON_OFF="已选择标准模式（经典图标）。"
+        SPINNER_MSG="正在安装所需组件..."
+        TITLE_SETTINGS="初始设置"
+        SUB_SETTINGS="自定义面板功能（按回车跳过）"
+        ASK_QUOTA="1. 启用每账户数据配额与限制（MB/GB）？[y/N]: "
+        MSG_QUOTA_ON="数据配额：已启用"
+        MSG_QUOTA_OFF="数据配额：已禁用（默认无限制）"
+        ASK_CU="2. 启用 CheckUser API 服务？[Y/n]: "
+        ASK_CU_PORT="   CheckUser API 端口 [默认: 5000]: "
+        MSG_CU_ON="CheckUser API：已在端口 %s 启用"
+        MSG_CU_OFF="CheckUser API：已禁用"
+        ASK_DUAL="3. 启用 443 端口 DualMode (V2Ray + SSL 同时运行)？[y/N]: "
+        MSG_DUAL_CONFIG="正在配置 443 端口 DualMode..."
+        MSG_DUAL_ON="DualMode 443：已启用 (SNI 多路复用)"
+        MSG_DUAL_OFF="DualMode 443：已禁用"
+        CARD_SUCCESS="安装成功完成！"
+        CARD_ACCESS="随时进入控制面板命令："
+        LBL_SVC_MAIN="主要服务"
+        VAL_SVC_MAIN="运行中 (danael.service)"
+        LBL_SVC_WS="WebSocket Proxy"
+        VAL_SVC_WS="端口 80 (HTTP Payload)"
+        LBL_SVC_SSL="SSL / TLS Proxy"
+        VAL_SVC_SSL="端口 444 (Direct/WS)"
+        LBL_SVC_ICONS="高级图标"
+        LBL_SVC_LANG="语言"
+        FOOTER_LINE="                   BY DANAELH4X 墨西哥制造                    "
+        ;;
+    ja)
+        MSG_LANG_SET="言語が設定されました: %s"
+        TITLE_ICON_TEST="アイコン表示テスト"
+        MSG_ICON_Q1="上のアイコンが正しく表示されていますか？"
+        MSG_ICON_Q2="(四角い空枠や文字化けが見える場合は \"n\" を選択)"
+        ASK_ICON="高度なアイコンを有効にしますか？ [y/N]: "
+        MSG_ICON_ON="高度なアイコンが有効になりました。"
+        MSG_ICON_OFF="標準モードが選択されました（クラシック表示）。"
+        SPINNER_MSG="必要なコンポーネントをインストール中..."
+        TITLE_SETTINGS="初期設定"
+        SUB_SETTINGS="パネル機能のカスタマイズ（Enterでスキップ）"
+        ASK_QUOTA="1. アカウントごとのデータクォータ制限(MB/GB)を有効化？[y/N]: "
+        MSG_QUOTA_ON="データクォータ: 有効"
+        MSG_QUOTA_OFF="データクォータ: 無効 (デフォルト無制限)"
+        ASK_CU="2. CheckUser API サービスを有効化しますか？ [Y/n]: "
+        ASK_CU_PORT="   CheckUser API のポート [デフォルト: 5000]: "
+        MSG_CU_ON="CheckUser API: ポート %s で有効化"
+        MSG_CU_OFF="CheckUser API: 無効"
+        ASK_DUAL="3. 443番ポートのDualMode (V2Ray + SSL 同時運用)を有効化？[y/N]: "
+        MSG_DUAL_CONFIG="443番ポート DualMode を設定中..."
+        MSG_DUAL_ON="DualMode 443: 有効 (SNI 多重化)"
+        MSG_DUAL_OFF="DualMode 443: 無効"
+        CARD_SUCCESS="インストールが正常に完了しました！"
+        CARD_ACCESS="いつでもコントロールパネルを開くコマンド:"
+        LBL_SVC_MAIN="メインサービス"
+        VAL_SVC_MAIN="アクティブ (danael.service)"
+        LBL_SVC_WS="WebSocket Proxy"
+        VAL_SVC_WS="ポート 80 (HTTP Payload)"
+        LBL_SVC_SSL="SSL / TLS Proxy"
+        VAL_SVC_SSL="ポート 444 (Direct/WS)"
+        LBL_SVC_ICONS="高度なアイコン"
+        LBL_SVC_LANG="言語"
+        FOOTER_LINE="                   BY DANAELH4X メキシコ製                    "
+        ;;
+    ar)
+        MSG_LANG_SET="تم تعيين اللغة: %s"
+        TITLE_ICON_TEST="اختبار دعم الأيقونات"
+        MSG_ICON_Q1="هل يمكنك رؤية الأيقونات أعلاه بشكل صحيح؟"
+        MSG_ICON_Q2="(إذا رأيت مربعات فارغة أو رموزاً معطوبة، اختر \"n\")"
+        ASK_ICON="تفعيل دعم الأيقونات المتقدمة؟ [y/N]: "
+        MSG_ICON_ON="تم تفعيل الأيقونات المتقدمة."
+        MSG_ICON_OFF="تم اختيار الوضع القياسي (أيقونات كلاسيكية)."
+        SPINNER_MSG="جاري تثبيت المكونات المطلوبة..."
+        TITLE_SETTINGS="الإعدادات الأولية"
+        SUB_SETTINGS="تخصيص ميزات اللوحة (اضغط Enter للتخطي)"
+        ASK_QUOTA="1. تفعيل حصة البيانات (MB/GB) لكل حساب؟ [y/N]: "
+        MSG_QUOTA_ON="حصة البيانات: مفعلة"
+        MSG_QUOTA_OFF="حصة البيانات: معطلة (غير محدود)"
+        ASK_CU="2. تفعيل خدمة CheckUser API؟ [Y/n]: "
+        ASK_CU_PORT="   منفذ CheckUser API [الافتراضي: 5000]: "
+        MSG_CU_ON="CheckUser API: مفعل على المنفذ %s"
+        MSG_CU_OFF="CheckUser API: معطل"
+        ASK_DUAL="3. تفعيل DualMode على المنفذ 443 (V2Ray + SSL متزامن)؟ [y/N]: "
+        MSG_DUAL_CONFIG="جاري تكوين DualMode على المنفذ 443..."
+        MSG_DUAL_ON="DualMode 443: مفعل (SNI Multiplexer)"
+        MSG_DUAL_OFF="DualMode 443: معطل"
+        CARD_SUCCESS="تم اكتمال التثبيت بنجاح!"
+        CARD_ACCESS="للدخول إلى لوحة التحكم في أي وقت:"
+        LBL_SVC_MAIN="الخدمة الرئيسية"
+        VAL_SVC_MAIN="نشط (danael.service)"
+        LBL_SVC_WS="WebSocket Proxy"
+        VAL_SVC_WS="المنفذ 80 (HTTP Payload)"
+        LBL_SVC_SSL="SSL / TLS Proxy"
+        VAL_SVC_SSL="المنفذ 444 (Direct/WS)"
+        LBL_SVC_ICONS="أيقونات متقدمة"
+        LBL_SVC_LANG="اللغة"
+        FOOTER_LINE="                 BY DANAELH4X وصنع في المكسيك                 "
+        ;;
+    de)
+        MSG_LANG_SET="Sprache eingestellt: %s"
+        TITLE_ICON_TEST="SYMBOL-SUPPORT-TEST"
+        MSG_ICON_Q1="Können Sie die oberen Symbole korrekt sehen?"
+        MSG_ICON_Q2="(Wenn Sie leere Kästchen sehen, wählen Sie \"n\")"
+        ASK_ICON="Erweiterte Symbole aktivieren? [y/N]: "
+        MSG_ICON_ON="Erweiterte Symbole AKTIVIERT."
+        MSG_ICON_OFF="Standardmodus ausgewählt (klassische Symbole)."
+        SPINNER_MSG="Erforderliche Komponenten werden installiert..."
+        TITLE_SETTINGS="ERSTE EINSTELLUNGEN"
+        SUB_SETTINGS="Panel-Funktionen anpassen (Enter zum Überspringen)"
+        ASK_QUOTA="1. Datenkontingent-Zähler (MB/GB) pro Konto aktivieren? [y/N]: "
+        MSG_QUOTA_ON="Datenkontingent: AKTIVIERT"
+        MSG_QUOTA_OFF="Datenkontingent: Deaktiviert"
+        ASK_CU="2. CheckUser API-Dienst aktivieren? [Y/n]: "
+        ASK_CU_PORT="   Port für CheckUser API [Standard: 5000]: "
+        MSG_CU_ON="CheckUser API: AKTIVIERT auf Port %s"
+        MSG_CU_OFF="CheckUser API: Deaktiviert"
+        ASK_DUAL="3. DualMode Port 443 (V2Ray + SSL gleichzeitig) aktivieren? [y/N]: "
+        MSG_DUAL_CONFIG="DualMode auf Port 443 wird konfiguriert..."
+        MSG_DUAL_ON="DualMode 443: AKTIVIERT (SNI Multiplexer)"
+        MSG_DUAL_OFF="DualMode 443: Deaktiviert"
+        CARD_SUCCESS="INSTALLATION ERFOLGREICH ABGESCHLOSSEN!"
+        CARD_ACCESS="Um das Kontrollpanel jederzeit zu öffnen:"
+        LBL_SVC_MAIN="Hauptdienst"
+        VAL_SVC_MAIN="AKTIV (danael.service)"
+        LBL_SVC_WS="WebSocket Proxy"
+        VAL_SVC_WS="Port 80 (HTTP Payload)"
+        LBL_SVC_SSL="SSL / TLS Proxy"
+        VAL_SVC_SSL="Port 444 (Direct/WS)"
+        LBL_SVC_ICONS="Erweiterte Symbole"
+        LBL_SVC_LANG="Sprache"
+        FOOTER_LINE="            BY DANAELH4X UND HERGESTELLT IN MEXIKO            "
+        ;;
+    *)
+        MSG_LANG_SET="Language set: %s"
+        TITLE_ICON_TEST="ICON SUPPORT TEST"
+        MSG_ICON_Q1="Can you see the icons above correctly?"
+        MSG_ICON_Q2="(If you see empty boxes or broken symbols, choose \"n\")"
+        ASK_ICON="Enable advanced icon support? [y/N]: "
+        MSG_ICON_ON="Advanced icons ENABLED."
+        MSG_ICON_OFF="Standard mode selected (classic icons)."
+        SPINNER_MSG="Installing required components..."
+        TITLE_SETTINGS="INITIAL SETTINGS"
+        SUB_SETTINGS="Customize panel features (Press Enter to skip)"
+        ASK_QUOTA="1. Enable data quota counter & limit (MB/GB) per account? [y/N]: "
+        MSG_QUOTA_ON="Data quota: ENABLED"
+        MSG_QUOTA_OFF="Data quota: Disabled (Unlimited by default)"
+        ASK_CU="2. Enable CheckUser API service? [Y/n]: "
+        ASK_CU_PORT="   Port for CheckUser API [default: 5000]: "
+        MSG_CU_ON="CheckUser API: ENABLED on port %s"
+        MSG_CU_OFF="CheckUser API: Disabled"
+        ASK_DUAL="3. Enable DualMode on port 443 (V2Ray + SSL simultaneous)? [y/N]: "
+        MSG_DUAL_CONFIG="Configuring DualMode on port 443..."
+        MSG_DUAL_ON="DualMode 443: ENABLED (SNI Multiplexer)"
+        MSG_DUAL_OFF="DualMode 443: Disabled"
+        CARD_SUCCESS="INSTALLATION COMPLETED SUCCESSFULLY!"
+        CARD_ACCESS="To access the control panel at any time:"
+        LBL_SVC_MAIN="Main Service"
+        VAL_SVC_MAIN="ACTIVE (danael.service)"
+        LBL_SVC_WS="WebSocket Proxy"
+        VAL_SVC_WS="Port 80 (HTTP Payload)"
+        LBL_SVC_SSL="SSL / TLS Proxy"
+        VAL_SVC_SSL="Port 444 (Direct/WS)"
+        LBL_SVC_ICONS="Advanced Icons"
+        LBL_SVC_LANG="Language"
+        case "$LANG_CODE" in
+            it) FOOTER_LINE="               BY DANAELH4X E FATTO IN MESSICO                " ;;
+            tr) FOOTER_LINE="            BY DANAELH4X VE MEKSİKA'DA YAPILMIŞTIR            " ;;
+            vi) FOOTER_LINE="             BY DANAELH4X VÀ ĐƯỢC LÀM TẠI MEXICO              " ;;
+            ko) FOOTER_LINE="                   BY DANAELH4X 및 멕시코산                   " ;;
+            hi) FOOTER_LINE="              BY DANAELH4X और मेक्सिको में निर्मित              " ;;
+            bn) FOOTER_LINE="               BY DANAELH4X এবং মেক্সিকোতে তৈরি                " ;;
+            ur) FOOTER_LINE="            BY DANAELH4X اور میکسیکو میں بنایا گیا            " ;;
+            fa) FOOTER_LINE="                  BY DANAELH4X و ساخت مکزیک                   " ;;
+            pl) FOOTER_LINE="            BY DANAELH4X I WYPRODUKOWANO W MEKSYKU            " ;;
+            nl) FOOTER_LINE="              BY DANAELH4X EN GEMAAKT IN MEXICO               " ;;
+            uk) FOOTER_LINE="              BY DANAELH4X І ЗРОБЛЕНО В МЕКСИЦІ               " ;;
+            th) FOOTER_LINE="                BY DANAELH4X และผลิตในเม็กซิโก                " ;;
+            el) FOOTER_LINE="          BY DANAELH4X ΚΑΙ ΚΑΤΑΣΚΕΥΑΣΜΕΝΟ ΣΤΟ ΜΕΞΙΚΟ          " ;;
+            tl) FOOTER_LINE="                BY DANAELH4X AT GAWA SA MEXICO                " ;;
+            *)  FOOTER_LINE="                BY DANAELH4X Y HECHO EN MÉXICO                " ;;
+        esac
+        ;;
+esac
 
-echo -e "${GRAY}╭─ ${CYAN}${BOLD}PRUEBA DE ICONOS / ICON TEST${RESET} ${GRAY}───────────────────────────────╮${RESET}"
-echo -e "${GRAY}│                                                              │${RESET}"
-echo -e "${GRAY}│${RESET}         ${CYAN}󰌘   󰒋   󱘖   󰛳   󰍹   󰅟      󰣇      󰒃${RESET}            ${GRAY}│${RESET}"
-echo -e "${GRAY}│                                                              │${RESET}"
-echo -e "${GRAY}│${RESET}  ${MUTED}¿Puedes ver los iconos de arriba correctamente?${RESET}             ${GRAY}│${RESET}"
-echo -e "${GRAY}│${RESET}  ${DIM}(Si ves cuadros vacíos o símbolos rotos, seleccione 'n')${RESET}     ${GRAY}│${RESET}"
-echo -e "${GRAY}╰──────────────────────────────────────────────────────────────╯${RESET}"
+printf "  ${GREEN}✓${RESET} ${MUTED}${MSG_LANG_SET}${RESET}\n\n" "${WHITE}${BOLD}${LANG_NAME}${RESET}"
 
-NF_INPUT="$(ask_user "  ¿Activar soporte de iconos avanzados? [s/N]: " "n")"
+print_box_header "${CYAN}${BOLD}${TITLE_ICON_TEST}${RESET}"
+print_box_row ""
+print_box_row "      󰌘   󰒋   󱘖   󰛳   󰍹   󰅟      󰣇      󰒃"
+print_box_row ""
+print_box_row "  ${MUTED}${MSG_ICON_Q1}${RESET}"
+print_box_row "  ${DIM}${MSG_ICON_Q2}${RESET}"
+print_box_bottom
+
+NF_INPUT="$(ask_user "  ${ASK_ICON}" "n")"
 case "$NF_INPUT" in
-    [sS]|[yY]|[sS][iI]|[yY][eE][sS])
+    [sS]|[yY]|[sS][iI]|[yY][eE][sS]|[oO])
         NERD_FONTS="true"
-        echo -e "  ${GREEN}✓${RESET} ${WHITE}Iconos avanzados ACTIVADOS.${RESET}\n"
+        ICON_OK="󰄬"
+        ICON_WARN=""
+        ICON_FAIL="󰅖"
+        ICON_DAEMON=""
+        ICON_WS="󰛳"
+        ICON_SSL="󱘖"
+        ICON_CU="󰒋"
+        ICON_FONT="󰍹"
+        ICON_LANG="󰖟"
+        ICON_TG=""
+        ICONS_LABEL="Habilitados"
+        echo -e "  ${GREEN}${ICON_OK}${RESET} ${WHITE}${MSG_ICON_ON}${RESET}\n"
         ;;
     *)
         NERD_FONTS="false"
-        echo -e "  ${YELLOW}○${RESET} ${WHITE}Modo estándar seleccionado (iconos clásicos).${RESET}\n"
+        ICON_OK="✓"
+        ICON_WARN="○"
+        ICON_FAIL="✗"
+        ICON_DAEMON="●"
+        ICON_WS="●"
+        ICON_SSL="●"
+        ICON_CU="●"
+        ICON_FONT="○"
+        ICON_LANG="●"
+        ICON_TG="●"
+        ICONS_LABEL="Deshabilitados"
+        echo -e "  ${YELLOW}${ICON_WARN}${RESET} ${WHITE}${MSG_ICON_OFF}${RESET}\n"
         ;;
 esac
 
@@ -155,9 +614,9 @@ spinner() {
     local exitcode=$?
     printf "\033[?25h"
     if [ $exitcode -eq 0 ]; then
-        printf "\r  ${GREEN}✓${RESET}  %s\n" "$msg"
+        printf "\r  ${GREEN}${ICON_OK}${RESET}  %s\n" "$msg"
     else
-        printf "\r  ${RED}✗${RESET}  %s ${RED}(Error - ver %s)${RESET}\n" "$msg" "$LOG_FILE"
+        printf "\r  ${RED}${ICON_FAIL}${RESET}  %s ${RED}(Error - ver %s)${RESET}\n" "$msg" "$LOG_FILE"
         exit 1
     fi
 }
@@ -239,6 +698,9 @@ do_install() {
         exit 1
     fi
     chmod 755 /usr/local/bin/danael
+    ln -sf /usr/local/bin/danael /usr/local/bin/h4x
+    ln -sf /usr/local/bin/danael /usr/bin/h4x
+    ln -sf /usr/local/bin/danael /usr/bin/danael
 
     if [ ! -f /etc/danael-h4x/cert.pem ] || [ ! -f /etc/danael-h4x/key.pem ]; then
         openssl req -new -newkey rsa:2048 -days 3650 -nodes -x509 \
@@ -271,46 +733,46 @@ EOF
 
 do_install &
 INSTALL_PID=$!
-spinner $INSTALL_PID "Instalando lo necesario..."
+spinner $INSTALL_PID "$SPINNER_MSG"
 
 echo ""
 
-echo -e "${GRAY}╭─ ${CYAN}${BOLD}AJUSTES INICIALES${RESET} ${GRAY}───────────────────────────────────────────╮${RESET}"
-echo -e "${GRAY}│${RESET}  ${MUTED}Personalice las funciones del panel (Enter para omitir)${RESET}     ${GRAY}│${RESET}"
-echo -e "${GRAY}╰──────────────────────────────────────────────────────────────╯${RESET}"
+print_box_header "${CYAN}${BOLD}${TITLE_SETTINGS}${RESET}"
+print_box_row "  ${MUTED}${SUB_SETTINGS}${RESET}"
+print_box_bottom
 
-QUOTA_INPUT="$(ask_user "  1. ¿Activar contador y límite de datos (MB/GB) por cuenta? [s/N]: " "n")"
+QUOTA_INPUT="$(ask_user "  ${ASK_QUOTA}" "n")"
 case "$QUOTA_INPUT" in
-    [sS]|[yY]|[sS][iI]|[yY][eE][sS])
+    [sS]|[yY]|[sS][iI]|[yY][eE][sS]|[oO])
         DATA_QUOTA="true"
-        echo -e "     ${GREEN}✓${RESET} Cuota de datos: ${GREEN}ACTIVADA${RESET}"
+        echo -e "     ${GREEN}${ICON_OK}${RESET} ${WHITE}${MSG_QUOTA_ON}${RESET}"
         ;;
     *)
         DATA_QUOTA="false"
-        echo -e "     ${YELLOW}○${RESET} Cuota de datos: ${MUTED}Desactivada (Ilimitado por defecto)${RESET}"
+        echo -e "     ${YELLOW}${ICON_WARN}${RESET} ${MUTED}${MSG_QUOTA_OFF}${RESET}"
         ;;
 esac
 
-CU_INPUT="$(ask_user "  2. ¿Activar servicio CheckUser API? [S/n]: " "s")"
+CU_INPUT="$(ask_user "  ${ASK_CU}" "s")"
 case "$CU_INPUT" in
     [nN]|[nN][oO])
         CHECKUSER_ENABLED="false"
         CHECKUSER_PORT=5000
-        echo -e "     ${YELLOW}○${RESET} CheckUser API: ${MUTED}Desactivado${RESET}"
+        echo -e "     ${YELLOW}${ICON_WARN}${RESET} ${MUTED}${MSG_CU_OFF}${RESET}"
         ;;
     *)
         CHECKUSER_ENABLED="true"
-        CU_PORT_IN="$(ask_user "     Puerto para CheckUser API [default: 5000]: " "5000")"
+        CU_PORT_IN="$(ask_user "${ASK_CU_PORT}" "5000")"
         CHECKUSER_PORT="${CU_PORT_IN:-5000}"
-        echo -e "     ${GREEN}✓${RESET} CheckUser API: ${GREEN}ACTIVADO en puerto ${CHECKUSER_PORT}${RESET}"
+        printf "     ${GREEN}${ICON_OK}${RESET} ${WHITE}${MSG_CU_ON}${RESET}\n" "${CHECKUSER_PORT}"
         ;;
 esac
 
-DUAL_INPUT="$(ask_user "  3. ¿Activar DualMode puerto 443 (V2Ray + SSL simultáneo)? [s/N]: " "n")"
+DUAL_INPUT="$(ask_user "  ${ASK_DUAL}" "n")"
 case "$DUAL_INPUT" in
-    [sS]|[yY]|[sS][iI]|[yY][eE][sS])
+    [sS]|[yY]|[sS][iI]|[yY][eE][sS]|[oO])
         DUALMODE_443="true"
-        echo -e "     ${CYAN}⠋${RESET} Configurando DualMode puerto 443..."
+        echo -e "     ${CYAN}⠋${RESET} ${MSG_DUAL_CONFIG}"
         if command -v apt-get >/dev/null 2>&1; then
             apt-get install -y -qq nginx libnginx-mod-stream >> "$LOG_FILE" 2>&1 || true
         elif command -v pacman >/dev/null 2>&1; then
@@ -339,11 +801,11 @@ stream {
 }
 NGINX_CONF
         systemctl enable --now nginx >> "$LOG_FILE" 2>&1 || true
-        echo -e "     ${GREEN}✓${RESET} DualMode 443: ${GREEN}ACTIVADO (Multiplexor SNI)${RESET}"
+        echo -e "     ${GREEN}${ICON_OK}${RESET} ${WHITE}${MSG_DUAL_ON}${RESET}"
         ;;
     *)
         DUALMODE_443="false"
-        echo -e "     ${YELLOW}○${RESET} DualMode 443: ${MUTED}Desactivado${RESET}"
+        echo -e "     ${YELLOW}${ICON_WARN}${RESET} ${MUTED}${MSG_DUAL_OFF}${RESET}"
         ;;
 esac
 
@@ -395,7 +857,8 @@ cat << EOF > "$CONFIG_FILE"
   "dropbear_version": "2019.78",
   "language": "${LANG_CODE}",
   "nerd_fonts": ${NERD_FONTS},
-  "dualmode_443_enabled": ${DUALMODE_443}
+  "dualmode_443_enabled": ${DUALMODE_443},
+  "version": "1.0.0"
 }
 EOF
 
@@ -416,68 +879,32 @@ print_mexico_logo
 
 IP_PUBLIC="$(curl -s4 --max-time 3 https://api.ipify.org 2>/dev/null || ip -4 addr show scope global | grep inet | head -n1 | awk '{print $2}' | cut -d/ -f1)"
 
-if [ "$NERD_FONTS" = "true" ]; then
-    ICONS_LABEL="Habilitados"
-else
-    ICONS_LABEL="Deshabilitados"
-fi
-
+print_box_top
+print_box_row "                 ${GREEN}${BOLD}${CARD_SUCCESS}${RESET}"
+print_box_divider
+print_box_row "  ${MUTED}${CARD_ACCESS}${RESET}"
+print_box_row ""
 case "$LANG_CODE" in
-    es) FOOTER_LINE="                BY DANAELH4X Y HECHO EN MÉXICO                " ;;
-    en) FOOTER_LINE="                BY DANAELH4X & MADE IN MEXICO                 " ;;
-    pt) FOOTER_LINE="                BY DANAELH4X E FEITO NO MÉXICO                " ;;
-    id) FOOTER_LINE="               BY DANAELH4X & DIBUAT DI MEKSIKO               " ;;
-    ar) FOOTER_LINE="                 BY DANAELH4X وصنع في المكسيك                 " ;;
-    zh) FOOTER_LINE="                   BY DANAELH4X 墨西哥制造                    " ;;
-    ja) FOOTER_LINE="                   BY DANAELH4X メキシコ製                    " ;;
-    fr) FOOTER_LINE="             BY DANAELH4X ET FABRIQUÉ AU MEXIQUE              " ;;
-    ru) FOOTER_LINE="               BY DANAELH4X И СДЕЛАНО В МЕКСИКЕ               " ;;
-    de) FOOTER_LINE="            BY DANAELH4X UND HERGESTELLT IN MEXIKO            " ;;
-    it) FOOTER_LINE="               BY DANAELH4X E FATTO IN MESSICO                " ;;
-    tr) FOOTER_LINE="            BY DANAELH4X VE MEKSİKA'DA YAPILMIŞTIR            " ;;
-    vi) FOOTER_LINE="             BY DANAELH4X VÀ ĐƯỢC LÀM TẠI MEXICO              " ;;
-    ko) FOOTER_LINE="                   BY DANAELH4X 및 멕시코산                   " ;;
-    hi) FOOTER_LINE="              BY DANAELH4X और मेक्सिको में निर्मित              " ;;
-    bn) FOOTER_LINE="               BY DANAELH4X এবং মেক্সিকোতে তৈরি                " ;;
-    ur) FOOTER_LINE="            BY DANAELH4X اور میکسیکو میں بنایا گیا            " ;;
-    fa) FOOTER_LINE="                  BY DANAELH4X و ساخت مکزیک                   " ;;
-    pl) FOOTER_LINE="            BY DANAELH4X I WYPRODUKOWANO W MEKSYKU            " ;;
-    nl) FOOTER_LINE="              BY DANAELH4X EN GEMAAKT IN MEXICO               " ;;
-    uk) FOOTER_LINE="              BY DANAELH4X І ЗРОБЛЕНО В МЕКСИЦІ               " ;;
-    th) FOOTER_LINE="                BY DANAELH4X และผลิตในเม็กซิโก                " ;;
-    el) FOOTER_LINE="          BY DANAELH4X ΚΑΙ ΚΑΤΑΣΚΕΥΑΣΜΕΝΟ ΣΤΟ ΜΕΞΙΚΟ          " ;;
-    tl) FOOTER_LINE="                BY DANAELH4X AT GAWA SA MEXICO                " ;;
-    *)  FOOTER_LINE="                BY DANAELH4X Y HECHO EN MÉXICO                " ;;
+    es) OR_WORD="o" ;;
+    en) OR_WORD="or" ;;
+    pt) OR_WORD="ou" ;;
+    id) OR_WORD="atau" ;;
+    fr) OR_WORD="ou" ;;
+    ru) OR_WORD="или" ;;
+    *)  OR_WORD="o" ;;
 esac
-
-print_row() {
-    local k="$1"
-    local v="$2"
-    local color="$3"
-    local pad=$(( 37 - ${#v} ))
-    local spaces=""
-    if [ $pad -gt 0 ]; then
-        spaces="$(printf "%*s" "$pad" "")"
-    fi
-    printf "${GRAY}│${RESET}  ${WHITE}%-20s${RESET} : ${color}%s${RESET}%s${GRAY}│${RESET}\n" "$k" "$v" "$spaces"
-}
-
-echo -e "${GRAY}╭──────────────────────────────────────────────────────────────╮${RESET}"
-echo -e "${GRAY}│${RESET}                 ${GREEN}${BOLD}¡INSTALACIÓN COMPLETADA CON ÉXITO!${RESET}           ${GRAY}│${RESET}"
-echo -e "${GRAY}├──────────────────────────────────────────────────────────────┤${RESET}"
-echo -e "${GRAY}│${RESET}  ${MUTED}Para ingresar al panel de control en cualquier momento:${RESET}     ${GRAY}│${RESET}"
-echo -e "${GRAY}│                                                              │${RESET}"
-echo -e "${GRAY}│${RESET}                     ${CYAN}${BOLD}danael${RESET}                                   ${GRAY}│${RESET}"
-echo -e "${GRAY}│                                                              │${RESET}"
-print_row "Servicio Principal" "● ACTIVO (danael.service)" "$GREEN"
-print_row "WebSocket Proxy" "Puerto 80 (HTTP Payload)" "$CYAN"
-print_row "SSL / TLS Proxy" "Puerto 444 (Directo/WS)" "$CYAN"
+print_box_row "                ${CYAN}${BOLD}h4x${RESET}  ${MUTED}${OR_WORD}${RESET}  ${CYAN}${BOLD}danael${RESET}"
+print_box_row ""
+print_box_row "  ${WHITE}${ICON_DAEMON} ${LBL_SVC_MAIN}${RESET}    : ${GREEN}${VAL_SVC_MAIN}${RESET}"
+print_box_row "  ${WHITE}${ICON_WS} ${LBL_SVC_WS}${RESET}      : ${CYAN}${VAL_SVC_WS}${RESET}"
+print_box_row "  ${WHITE}${ICON_SSL} ${LBL_SVC_SSL}${RESET}     : ${CYAN}${VAL_SVC_SSL}${RESET}"
 if [ "$CHECKUSER_ENABLED" = "true" ]; then
-    print_row "CheckUser API" "http://${IP_PUBLIC}:${CHECKUSER_PORT}" "$YELLOW"
+    print_box_row "  ${WHITE}${ICON_CU} CheckUser API${RESET}         : ${YELLOW}http://${IP_PUBLIC}:${CHECKUSER_PORT}${RESET}"
 fi
-print_row "Iconos Avanzados" "${ICONS_LABEL}" "$PURPLE"
-print_row "Idioma" "${LANG_NAME}" "$PURPLE"
-echo -e "${GRAY}├──────────────────────────────────────────────────────────────┤${RESET}"
-echo -e "${GRAY}│${RESET}${BOLD}${WHITE}${FOOTER_LINE}${RESET}${GRAY}│${RESET}"
-echo -e "${GRAY}╰──────────────────────────────────────────────────────────────╯${RESET}"
+print_box_row "  ${WHITE}${ICON_FONT} ${LBL_SVC_ICONS}${RESET}    : ${PURPLE}${ICONS_LABEL}${RESET}"
+print_box_row "  ${WHITE}${ICON_LANG} ${LBL_SVC_LANG}${RESET}           : ${PURPLE}${LANG_NAME}${RESET}"
+print_box_row "  ${WHITE}${ICON_TG} Telegram${RESET}             : ${CYAN}https://t.me/danaelssh${RESET}"
+print_box_divider
+print_box_row "${BOLD}${WHITE}${FOOTER_LINE}${RESET}"
+print_box_bottom
 echo ""
