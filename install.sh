@@ -1273,10 +1273,10 @@ CONFIG_FILE="/etc/danael-h4x/config.json"
 
 cat << EOF > "$CONFIG_FILE"
 {
-  "websocket_enabled": true,
+  "websocket_enabled": false,
   "websocket_port": 80,
   "websocket_ports": [80],
-  "ssl_enabled": true,
+  "ssl_enabled": false,
   "ssl_port": 444,
   "ssl_ports": [444],
   "ssl_mode": "direct",
@@ -1374,8 +1374,8 @@ esac
 print_box_row "                ${CYAN}${BOLD}h4x${RESET}  ${MUTED}${OR_WORD}${RESET}  ${CYAN}${BOLD}danael${RESET}"
 print_box_row ""
 print_box_row "  ${WHITE}${ICON_DAEMON} ${LBL_SVC_MAIN}${RESET}    : ${GREEN}${VAL_SVC_MAIN}${RESET}"
-print_box_row "  ${WHITE}${ICON_WS} ${LBL_SVC_WS}${RESET}      : ${CYAN}${VAL_SVC_WS}${RESET}"
-print_box_row "  ${WHITE}${ICON_SSL} ${LBL_SVC_SSL}${RESET}     : ${CYAN}${VAL_SVC_SSL}${RESET}"
+print_box_row "  ${WHITE}${ICON_WS} ${LBL_SVC_WS}${RESET}      : ${MUTED}Inactivo (:80)${RESET}"
+print_box_row "  ${WHITE}${ICON_SSL} ${LBL_SVC_SSL}${RESET}     : ${MUTED}Inactivo (:444)${RESET}"
 if [ "$CHECKUSER_ENABLED" = "true" ]; then
     print_box_row "  ${WHITE}${ICON_CU} CheckUser API${RESET}         : ${YELLOW}http://${IP_PUBLIC}:${CHECKUSER_PORT}${RESET}"
 fi
